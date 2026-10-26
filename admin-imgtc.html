@@ -60,7 +60,7 @@
                 <span class="el-dropdown-link"><i class="fas fa-tasks"></i></span>
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item command="copy" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-link"></i> 批量复制</el-dropdown-item>
-                  <el-dropdown-item command="delete" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-trash-alt"></i> 批量删除</el-dropdown-item>
+                  <el-dropdown-item command="delete" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-trash-alt"></i> 批量删除记录</el-dropdown-item>
                   <el-dropdown-item command="download" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-download"></i> 批量下载</el-dropdown-item>
                   <el-dropdown-item command="block" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-lock"></i> 加入黑名单</el-dropdown-item>
                   <el-dropdown-item command="unblock" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-unlock"></i> 加入白名单</el-dropdown-item>
@@ -108,7 +108,7 @@
                   <div class="overlay-buttons">
                     <el-button size="mini" type="info" @click.stop="handleEditName(item)">编辑</el-button>
                     <el-button size="mini" type="primary" @click.stop="handleCopy(index, item.name)">复制</el-button>
-                    <el-button size="mini" type="danger" @click.stop="handleDelete(index, item.name)">删除</el-button>
+                    <el-button size="mini" type="danger" @click.stop="handleDelete(index, item.name)">删除记录</el-button>
                   </div>
               </div>
               <div class="card-footer">
@@ -582,7 +582,7 @@
           });
       },
       handleDelete(index, key) {
-        this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+        this.$confirm('此操作只会从后台列表删除记录，不会删除源文件；如需禁止访问请加入黑名单。是否继续?', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
@@ -591,7 +591,7 @@
             .then(response => response.ok ? this.tableData.splice(index, 1) : Promise.reject())
             .then(() => {
               this.updateStats();
-              this.$message.success('删除成功！');
+              this.$message.success('记录删除成功！');
             })
             .catch(() => this.$message.error('删除失败，请检查网络连接'));
         }).catch(() => this.$message.info('已取消删除'));
@@ -608,7 +608,9 @@
         document.body.removeChild(textarea);
       },
       handleCopy(index, key) {
-        const link = `${this.baseURL}/file/${key}`;
+        const row = this.tableData.find(item => item.name === key);
+        const shortId = row && row.metadata && row.metadata.shortId;
+        const link = `${this.baseURL}/file/${shortId || key}`;
         (navigator.clipboard?.writeText(link) || this.copyToClipboardFallback(link))
           .then(() => this.$message.success('复制文件链接成功~'))
           .catch(() => this.$message.error('自动复制失败，请手动复制链接：' + link));
@@ -618,8 +620,8 @@
         const selected = !this.paginatedTableData.every(file => file.selected);
         this.paginatedTableData.forEach(file => file.selected = selected);
       },
-      handleBatchDelete() {  // 批量删除
-        this.$confirm('此操作将永久删除这 ' + this.selectedFiles.length + ' 个文件, 是否继续?', '提示', {
+      handleBatchDelete() {  // 批量删除记录
+        this.$confirm('此操作只会从后台列表删除这 ' + this.selectedFiles.length + ' 条记录，不会删除源文件；如需禁止访问请加入黑名单。是否继续?', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
@@ -638,13 +640,13 @@
               });
               this.selectedFiles = [];
               this.updateStats();
-              this.$message.success('批量删除成功!');
+              this.$message.success('批量删除记录成功!');
             })
             .catch(() => this.$message.error('批量删除失败，请检查网络连接'));
         }).catch(() => this.$message.info('已取消批量删除'));
       },
       handleBatchCopy() {  // 批量复制链接
-        const links = this.selectedFiles.map(file => `${document.location.origin}/file/${file.name}`).join('\n');
+        const links = this.selectedFiles.map(file => `${document.location.origin}/file/${(file.metadata && file.metadata.shortId) || file.name}`).join('\n');
         (navigator.clipboard?.writeText(links) || this.copyToClipboardFallback(links))
           .then(() => this.$message.success('批量复制链接成功~'));
       },

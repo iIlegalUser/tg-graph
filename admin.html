@@ -105,7 +105,7 @@
                 <el-button size="mini" type="primary" @click="handleCopy(scope.$index,scope.row.name)">复制地址</el-button>
                 <el-button size="mini" type="primary" @click="handleWhite(scope.$index,scope.row.name)">白名单</el-button>
                 <el-button size="mini" type="info" @click="handleBlock(scope.$index,scope.row.name)">黑名单</el-button>
-                <el-button size="mini" type="danger" @click="handleDelete(scope.$index,scope.row.name)">删除</el-button>
+                <el-button size="mini" type="danger" @click="handleDelete(scope.$index,scope.row.name)">删除记录</el-button>
               </template>
             </el-table-column>
             </el-table>
@@ -167,7 +167,7 @@
       },
       handleDelete(index, key) {
         console.log(key);
-        if (confirm("确认删除该条记录吗?")) {
+        if (confirm("确认从后台列表删除该记录吗？这不会删除源文件；如需禁止访问请加入黑名单。")) {
           console.log("Yes")
           var requestOptions = {
             method: 'GET',
@@ -209,7 +209,9 @@
         window.location.href = "./api/manage/logout";
       },
       handleCopy(index, key) {
-        const text = `${document.location.origin}/file/${key}`;
+        const row = this.tableData.find(item => item.name === key);
+        const shortId = row && row.metadata && row.metadata.shortId;
+        const text = `${document.location.origin}/file/${shortId || key}`;
         if (navigator.clipboard) {
           // clipboard api 复制
           navigator.clipboard.writeText(text);
